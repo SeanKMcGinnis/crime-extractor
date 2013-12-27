@@ -1,40 +1,66 @@
 import urllib2
 import json
 import logging
+from datetime import date, timedelta
+from time import localtime, strftime
 ## Requires the Pyshp module available at: https://pypi.python.org/pypi/pyshp#downloads
 import shapefile
 
-## Variable definition
-# Run in debug mode?
-isDebug = False
-url = 'http://www.crimemapping.com/GetIncidents.aspx?db=12/17/2013+00:00:00&de=12/23/2013+23:59:00&ccs=AR,AS,BU,DP,DR,DU,FR,HO,VT,RO,SX,TH,VA,VB,WE&xmin=-11887295.546046117&ymin=4167690.748278573&xmax=-11852077.18526377&ymax=4181965.36331081'
+## Agency ID
+aid = 'b9663a24-c170-4f73-a490-ea4b0766b04d'
+## Spatial Extent to filter the query
+xmin = '-8340483.668819208'
+ymin = '4892562.196762973'
+xmax = '-8305265.30803686'
+ymax = '4907123.450651281'
+## Crime codes to query for
+ccs = 'AR,AS,BU,DP,DR,DU,FR,HO,VT,RO,SX,TH,VA,VB,WE'
+## Outpath and shapefile name
 outPath = '../data/incidents'
+## Number of Days for query
+days = 90
+
+## End Date for Query
+yesterday = date.today() - timedelta(1)
+## Start Date & Time for Query
+sd = date.today() - timedelta(days)
+db = sd.strftime('%m/%d/%Y') +'+00:00:00'
+## End Date & Time for Query
+de = yesterday.strftime('%m/%d/%Y') +'+23:59:59'
+
+
+url = 'http://www.crimemapping.com/GetIncidents.aspx?db='+ db +'&de='+ de +'&ccs='+ccs+'&xmin='+xmin+'&ymin='+ymin+'&xmax='+xmax+'&ymax='+ymax +'&aid='+aid
+
 
 w = shapefile.Writer(shapefile.POINT)
 w.autoBalance = 1
-w.field('AgencyID')
-w.field('AgencyName')
-w.field('CaseNumber')
-w.field('CrimeCodeID')
+w.field('AgID')
+w.field('AgName')
+w.field('CaseNum')
+w.field('CrimeID')
 w.field('CrimeCode')
-w.field('DateReported')
-w.field('Description')
-w.field('Location')
+w.field('DateRpt')
+w.field('Desc','C','255')
+w.field('Loc')
 w.field('X')
 w.field('Y')
 ## TODO: Build the projection file
 
-response = urllib2.urlopen(url).read()
-data = json.loads(response.decode('utf8'))
-incidents = data['incidents']
+try:
+	response = urllib2.urlopen(url).read()
+	data = json.loads(response.decode('utf8'))
+	incidents = data['incidents']
 	
-for incident in incidents:
-	#logging.warning(incident['CrimeCode'])
-	w.point(incident['X'], incident['Y'])
-	w.record(incident['AgencyID'],incident['AgencyName'], incident['CaseNumber'],incident['CrimeCodeID'],incident['CrimeCode'],incident['DateReported'],incident['Description'],incident['Location'], incident['X'],incident['Y'])
+	for incident in incidents:
+		w.point(incident['X'], incident['Y'])
+		w.record(incident['AgencyID'],incident['AgencyName'], incident['CaseNumber'],incident['CrimeCodeID'],incident['CrimeCode'],incident['DateReported'],incident['Description'],incident['Location'], incident['X'],incident['Y'])
+		
+	w.save(outPath)
+except HTTPError, e:
+	print 'The server couldn\'t fufill the request. Error Code: ', e.code
+except URLError, e:
+	print 'The server couldn\'t be reached. Error Code: ', e.code
 	
-w.save(outPath)
-
 def getPRJ(epsg):
 	"""
 	Grab an WKT version of an EPSG code
