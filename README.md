@@ -24,4 +24,3 @@ The script takes the variables, builds the request and converts the JSON respons
 
 <strong>In Process Functionality</strong><br />
 * Requesting extent information from CrimeMapping.com Agency Information page
-* Scraping incident information from <a href="http://www.crimereports.com>CrimeReports.com</a>
