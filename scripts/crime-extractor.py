@@ -1,7 +1,6 @@
 import os
 import urllib2
 import json
-import logging
 from datetime import date, timedelta
 from time import localtime, strftime
 ## Requires the Pyshp module available at: https://pypi.python.org/pypi/pyshp#downloads
